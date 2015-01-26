@@ -259,8 +259,8 @@ function amd(loader) {
   loader.instantiate = function(load) {
     var loader = this;
 
-    if (load.metadata.format == 'AMD' || !load.metadata.format && load.source.match(amdRegEx)) {
-      load.metadata.format = 'AMD';
+    if (load.metadata.format == 'amd-parse' || !load.metadata.format && load.source.match(amdRegEx)) {
+      load.metadata.format = 'amd-parse';
 
       if (loader.execute !== false) {
         processSource(loader, load);
