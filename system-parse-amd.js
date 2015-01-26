@@ -259,8 +259,8 @@ function amd(loader) {
   loader.instantiate = function(load) {
     var loader = this;
 
-    if (load.metadata.format == 'amd' || !load.metadata.format && load.source.match(amdRegEx)) {
-      load.metadata.format = 'amd';
+    if (load.metadata.format == 'AMD' || !load.metadata.format && load.source.match(amdRegEx)) {
+      load.metadata.format = 'AMD';
 
       if (loader.execute !== false) {
         processSource(loader, load);
@@ -516,3 +516,5 @@ function amd(loader) {
 	};
 	
 }
+
+module.exports = amd;
