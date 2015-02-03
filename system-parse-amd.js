@@ -245,7 +245,7 @@ function amd(loader) {
     global.exports = oldExports;
   }
 
-  generateDefine(loader);
+  // generateDefine(loader);
 
   if (loader.scriptLoader) {
     var loaderFetch = loader.fetch;
@@ -280,7 +280,7 @@ function amd(loader) {
   
   
   // ============================ NEW CODE =============================
-
+	var indexOf = [].indexOf;
 
 	// processes the source and supplies 
 	function processSource(loader, load) {
