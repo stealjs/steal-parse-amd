@@ -1,6 +1,6 @@
 {
   "name": "system-parse-amd",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A parsing AMD extension for System loaders",
   "main": "system-parse-amd.js",
   "directories": {
