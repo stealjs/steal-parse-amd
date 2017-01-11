@@ -6,7 +6,7 @@ var get = function(url, cb){
 	function reqListener () {
 		cb(this.responseText);
 	}
-	
+
 	var oReq = new XMLHttpRequest();
 	oReq.onload = reqListener;
 	oReq.open("get", url, true);
@@ -100,6 +100,15 @@ asyncTest("empty variable", function(){
 		deepEqual( getAMDDeps(basics), []);
 		start();
 	});
+});
+
+asyncTest("UMD with multiple defines", function(){
+  get("umd-ish.js", function(source){
+    var load = { name: "umd-ish", source: source };
+    amdExports.processSource({}, load);
+    ok(true, "did not throw");
+    start();
+  });
 });
 
 

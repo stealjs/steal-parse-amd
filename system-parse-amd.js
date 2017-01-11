@@ -125,20 +125,20 @@ function amd(loader) {
 
       // remove system dependencies
       var requireIndex, exportsIndex, moduleIndex;
-      
+
       if ((requireIndex = indexOf.call(deps, 'require')) != -1) {
-        
+
         deps.splice(requireIndex, 1);
 
         var factoryText = factory.toString();
 
         deps = deps.concat(getCJSDeps(factoryText, requireIndex));
       }
-        
+
 
       if ((exportsIndex = indexOf.call(deps, 'exports')) != -1)
         deps.splice(exportsIndex, 1);
-      
+
       if ((moduleIndex = indexOf.call(deps, 'module')) != -1)
         deps.splice(moduleIndex, 1);
 
@@ -157,10 +157,10 @@ function amd(loader) {
           // add back in system dependencies
           if (moduleIndex != -1)
             depValues.splice(moduleIndex, 0, module);
-          
+
           if (exportsIndex != -1)
             depValues.splice(exportsIndex, 0, exports);
-          
+
           if (requireIndex != -1)
             depValues.splice(requireIndex, 0, makeRequire(module.id, require, loader));
 
@@ -178,7 +178,7 @@ function amd(loader) {
       if (!name) {
         // already defined anonymously -> throw
         if (anonDefine)
-          throw new TypeError('Multiple defines for anonymous module');
+			throw new TypeError('Multiple defines for anonymous module');
         anonDefine = define;
       }
       // named define
@@ -211,6 +211,7 @@ function amd(loader) {
   var anonDefine;
   // set to true if the current module turns out to be a named define bundle
   var defineBundle;
+  var anonClosureDepth = Infinity;
 
   var oldModule, oldExports, oldDefine;
 
@@ -277,19 +278,19 @@ function amd(loader) {
 
     return loaderInstantiate.call(loader, load);
   };
-  
-  
+
+
   // ============================ NEW CODE =============================
 	var indexOf = [].indexOf;
 
-	// processes the source and supplies 
+	// processes the source and supplies
 	function processSource(loader, load) {
 		var executed = false;
 		var executedDefs = [];
 	    anonDefine = null;
     	defineBundle = null;
-		
-		
+
+
 		// only executes the source once for all defines.
 		// tracks the factories
 		// this is so execute can be done later
@@ -299,10 +300,10 @@ function amd(loader) {
 					oldModule = global.module,
 					oldExports = global.exports,
 					oldDefine = global.define;
-				
+
 				global.module = undefined;
     			global.exports = undefined;
-				
+
 				loader.global.define = function(){
 					executedDefs.push(cleanDefineArgs.apply(null, arguments));
 				};
@@ -311,48 +312,51 @@ function amd(loader) {
 				executed = true;
 				removeDefine(loader);
 			}
-			
+
 			return executedDefs[index];
 		};
-		
+
 		getDefs(load.source, function(def, index, requireIndex, exportsIndex, moduleIndex){
-			
+
 			def.execute = function(require, exports, module) {
 				var deps = def.deps;
 				var depValues = [];
 				for (var i = 0; i < deps.length; i++)
 					depValues.push(require(deps[i]));
-			
+
 				module.uri = loader.baseURL + module.id;
-			
+
 				module.config = function() {};
-			
+
 				// add back in system dependencies
 				if (moduleIndex != -1)
 					depValues.splice(moduleIndex, 0, module);
-				
+
 				if (exportsIndex != -1)
 					depValues.splice(exportsIndex, 0, exports);
-				
+
 				if (requireIndex != -1)
 					depValues.splice(requireIndex, 0, makeRequire(module.id, require, loader));
-			
+
 				var output = getExecutedDefs(index).factory.apply(global, depValues);
-			
+
 				if (typeof output == 'undefined' && module)
 					output = module.exports;
-			
+
 				if (typeof output != 'undefined') {
 					return output;
 				}
 			};
-			
+
 			// anonymous define
 			if (!def.name) {
 				// already defined anonymously -> throw
 				if (anonDefine) {
-					throw new TypeError('Multiple defines for anonymous module');
+					if(def.closureDepth > anonClosureDepth) {
+						return;
+					}
 				}
+				anonClosureDepth = def.closureDepth;
 				anonDefine = def;
 			} else {
 				// if it has no dependencies and we don't have any other
@@ -377,7 +381,29 @@ function amd(loader) {
 			}
 		});
 	}
-	
+
+	function makeClosureCounter(source) {
+		var idx = 0,
+			depth = 0,
+			char = '';
+
+		return function(untilIdx){
+			while(idx < untilIdx) {
+				char = source[idx];
+
+				if(char === "{") {
+					depth++;
+				} else if(char === "}") {
+					depth--;
+				}
+
+				idx++;
+			}
+
+			return depth;
+		}
+	}
+
 	function cleanDefineArgs(name, deps, factory){
 		// Clean up arguments
 		if (typeof name != 'string') {
@@ -399,51 +425,55 @@ function amd(loader) {
 		// in IE8, a trailing comma becomes a trailing undefined entry
 		if (deps[deps.length - 1] === undefined)
 			deps.pop();
-		
+
 		return {name: name, deps: deps, factory: factory};
 	}
-	
+
 	function getDefs(source, cb) {
 		amdRegEx.lastIndex = 0;
 		var res,
 			define,
-			count = 0;
-		
+			count = 0,
+			closures = makeClosureCounter(source);
+
 		while(res = amdRegEx.exec(source)) {
 			// 1 is always the name
 			var name = trimStr( res[1] ),
-				// 2 is either an array of deps, or the start of the definition 
+				// 2 is either an array of deps, or the start of the definition
 				deps = getArgs( res[2] );
-			
+
 			if (!(deps instanceof Array)) {
 				deps = ['require', 'exports', 'module'];
 			}
-			
+
 			var requireIndex, exportsIndex, moduleIndex;
-			
+
 			if((requireIndex = deps.indexOf("require")) >= 0 ) {
 				var factoryText = getFactoryText(source, res, amdRegEx.lastIndex);
-				
+
 				deps.splice(requireIndex, 1);
 				if(factoryText) {
 					deps = deps.concat(getCJSDeps(factoryText, requireIndex));
 				}
 			}
-			
+
 			if ((exportsIndex = deps.indexOf('exports')) != -1)
 				deps.splice(exportsIndex, 1);
-      
+
 			if ((moduleIndex = deps.indexOf('module')) != -1)
 				deps.splice(moduleIndex, 1);
-				
+
+			var closureDepth = closures(res.index);
+
 			cb({
 				deps: deps,
 				name: name,
+				closureDepth: closureDepth
 			}, count++, requireIndex, exportsIndex, moduleIndex);
 		}
 	}
-  
-  
+
+
   	function trimStr(str){
 		if(str) {
   			var parts = str.match(/["']([^"']+)["']/);
@@ -471,7 +501,7 @@ function amd(loader) {
 			openBrackets = 0,
 			firstBracket,
 			lastBracket;
-		
+
 		while(openParens && index < source.length) {
 			var ch = source.charAt(index);
 			if(ch === "}") {
@@ -494,8 +524,8 @@ function amd(loader) {
 			}
 			index++;
 		}
-		
-		
+
+
 		// we are looking for start of args ( ... we might want to include function
 		var startArgs = source.indexOf("(", lastIndex);
 		var startBody = source.indexOf("{", lastIndex);
@@ -506,15 +536,16 @@ function amd(loader) {
 		var openBrackets = 1;
 		var index = startBody + 1;
 		// start counting {} until we have found corresponding }
-		
+
 		return source.substring(startArgs, lastBracket+1);
 	}
-	
+
 	return {
+		processSource: processSource,
 		getCJSDeps: getCJSDeps,
 		getDefs: getDefs
 	};
-	
+
 }
 
 module.exports = amd;
