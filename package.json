@@ -1,6 +1,6 @@
 {
   "name": "steal-parse-amd",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "A parsing AMD extension for StealJS",
   "main": "system-parse-amd.js",
   "directories": {
