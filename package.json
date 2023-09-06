@@ -26,6 +26,6 @@
     "systemjs": "git://github.com/bitovi/systemjs.git#b664e4cd359c013acb3445627d1e1e1799424542",
     "mocha": "1.18.2",
     "traceur": "0.0.58",
-    "jquery": "2.1.3"
+    "jquery": "3.5.0"
   }
 }
